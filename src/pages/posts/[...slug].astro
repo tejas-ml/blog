@@ -1,7 +1,9 @@
 ---
 import { render } from "astro:content";
 import Base from "../../layouts/Base.astro";
+import SectionBadge from "../../components/SectionBadge.astro";
 import { getPublishedPosts, postSlug, formatDate } from "../../lib/posts";
+import { getSection, sectionPath } from "../../lib/sections";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -14,6 +16,7 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post);
 const slug = postSlug(post);
+const section = getSection(post.data.category);
 ---
 <Base
   title={post.data.title}
@@ -33,23 +36,27 @@ const slug = postSlug(post);
         <h1>{post.data.title}</h1>
         <div class="meta">
           <span>Tejas Mahajan</span>
-          {post.data.tags.length > 0 && <span>{post.data.tags.join(" · ")}</span>}
+          {section && <SectionBadge slug={section.slug} />}
         </div>
       </header>
       <div class="prose">
         <Content />
       </div>
       <footer class="post-footer">
-        {post.data.tags.length > 0 && (
-          <div class="tags">
-            {post.data.tags.map((tag) => (
-              <a class="tag" href={`${import.meta.env.BASE_URL}tags/${tag.toLowerCase().replace(/\s+/g, "-")}/`}>{tag}</a>
-            ))}
-          </div>
-        )}
+        <div class="tags">
+          {section && <SectionBadge slug={section.slug} />}
+          {post.data.tags.map((tag) => (
+            <a class="tag" href={`${import.meta.env.BASE_URL}tags/${tag.toLowerCase().replace(/\s+/g, "-")}/`}>{tag}</a>
+          ))}
+        </div>
         <p>
           Written by <a href={`${import.meta.env.BASE_URL}about/`}>Tejas Mahajan</a>.
-          More writing on the <a href={import.meta.env.BASE_URL}>blog</a>,
+          {section && (
+            <>
+              {" "}More in <a href={sectionPath(section.slug)}>{section.title}</a>.
+            </>
+          )}
+          {" "}All writing on the <a href={import.meta.env.BASE_URL}>blog</a>,
           and projects on the <a href="https://tejas-ml.github.io/">portfolio</a>.
         </p>
       </footer>

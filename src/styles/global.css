@@ -158,6 +158,63 @@ a:hover {
   background: transparent;
 }
 
+.section-nav-wrap {
+  border-top: 1px solid var(--border);
+}
+
+.section-nav {
+  max-width: var(--nav-width);
+  margin: 0 auto;
+  padding: 0 20px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 2px;
+  list-style: none;
+}
+
+.section-nav a {
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 4px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+}
+
+.section-nav a:hover,
+.section-nav a.active {
+  color: var(--text);
+  background: var(--code-bg);
+  text-decoration: none;
+}
+
+.section-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 1px 8px;
+  text-decoration: none;
+  background: var(--bg-elevated);
+  line-height: 1.5;
+}
+
+.section-badge:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+  text-decoration: none;
+}
+
+.section-feed {
+  font-size: 0.9rem;
+  margin-top: -16px;
+  margin-bottom: 32px;
+}
+
 .theme-toggle {
   background: none;
   border: 1px solid var(--border);
@@ -495,7 +552,7 @@ main {
   .site-nav {
     display: none;
     position: absolute;
-    top: 56px;
+    top: 100%;
     left: 0;
     right: 0;
     background: var(--bg-elevated);
@@ -507,7 +564,7 @@ main {
   }
   .site-nav.open { display: flex; }
   .site-nav a { padding: 10px 8px; }
-  .nav-inner { position: relative; }
   .page-title, .post-header h1 { font-size: 1.75rem; }
   main { padding-top: 32px; }
+  .section-nav { padding-left: 16px; padding-right: 16px; }
 }

@@ -1,6 +1,8 @@
 ---
+import { SECTIONS, sectionPath, type SectionSlug } from "../lib/sections";
+
 interface Props {
-  current?: "home" | "tags" | "about" | "post";
+  current?: "home" | "tags" | "about" | "post" | SectionSlug;
 }
 const { current } = Astro.props;
 const base = import.meta.env.BASE_URL;
@@ -29,6 +31,20 @@ const base = import.meta.env.BASE_URL;
       </button>
     </div>
   </div>
+  <nav class="section-nav-wrap" aria-label="Blog sections">
+    <ul class="section-nav">
+      {SECTIONS.map((section) => (
+        <li>
+          <a
+            href={sectionPath(section.slug)}
+            class={current === section.slug ? "active" : undefined}
+          >
+            {section.navLabel}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
 </header>
 <script>
   const toggle = document.querySelector(".nav-toggle");

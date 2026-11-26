@@ -2,6 +2,7 @@
 title: "QoS-aware memory scheduling for CPU–AI co-execution"
 description: "How FairDRAM, a research prototype built on Ramulator 2, gives latency-sensitive CPU requests bounded priority when an accelerator is flooding memory bandwidth."
 pubDate: 2026-11-25
+category: computer-architecture
 tags: ["computer architecture", "systems", "memory", "scheduling"]
 ---
 

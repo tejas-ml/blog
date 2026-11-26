@@ -1,0 +1,12 @@
+---
+import { getSection, sectionPath } from "../lib/sections";
+
+interface Props {
+  slug: string;
+}
+const { slug } = Astro.props;
+const section = getSection(slug);
+---
+{section && (
+  <a class="section-badge" href={sectionPath(section.slug)}>{section.title}</a>
+)}

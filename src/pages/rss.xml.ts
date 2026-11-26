@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
 import { getPublishedPosts, postSlug } from '../lib/posts';
+import { getSection } from '../lib/sections';
 
 export async function GET(context: APIContext) {
   const posts = await getPublishedPosts();
@@ -9,16 +10,19 @@ export async function GET(context: APIContext) {
   return rss({
     title: 'Tejas Mahajan — Blog',
     description:
-      'Technical notes on machine learning, AI security, computational biology, and systems, by Tejas Mahajan.',
+      'Technical notes on biology, chemistry, industry biochem, computer architecture, quant trading, and machine learning, by Tejas Mahajan.',
     site: blogRoot,
     xmlns: { atom: 'http://www.w3.org/2005/Atom' },
     customData: `<atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />`,
-    items: posts.map((post) => ({
-      title: post.data.title,
-      description: post.data.description,
-      pubDate: post.data.pubDate,
-      link: `/blog/posts/${postSlug(post)}/`,
-      categories: post.data.tags,
-    })),
+    items: posts.map((post) => {
+      const section = getSection(post.data.category);
+      return {
+        title: post.data.title,
+        description: post.data.description,
+        pubDate: post.data.pubDate,
+        link: `/blog/posts/${postSlug(post)}/`,
+        categories: [section?.title, ...post.data.tags].filter(Boolean) as string[],
+      };
+    }),
   });
 }

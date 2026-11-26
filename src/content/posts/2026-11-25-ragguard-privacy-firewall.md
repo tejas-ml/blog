@@ -2,6 +2,7 @@
 title: "How RAGGuard filters sensitive context before it reaches the model"
 description: "A walkthrough of RAGGuard, a research prototype that sits between a retriever and a generator, classifies each chunk, and measures leakage against an unfiltered RAG baseline."
 pubDate: 2026-11-25
+category: ai-ml
 tags: ["AI security", "RAG", "privacy", "machine learning"]
 ---
 

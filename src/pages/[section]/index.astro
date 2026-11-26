@@ -1,0 +1,36 @@
+---
+import Base from "../../layouts/Base.astro";
+import PostList from "../../components/PostList.astro";
+import { getPostsBySection } from "../../lib/posts";
+import { SECTIONS, getSection, sectionFeedPath, type SectionSlug } from "../../lib/sections";
+
+export async function getStaticPaths() {
+  return SECTIONS.map((section) => ({
+    params: { section: section.slug },
+    props: { slug: section.slug },
+  }));
+}
+
+const { slug } = Astro.props as { slug: SectionSlug };
+const section = getSection(slug)!;
+const posts = await getPostsBySection(slug);
+const feedPath = sectionFeedPath(slug);
+---
+<Base
+  title={section.title}
+  description={section.description}
+  current={slug}
+  canonical={`https://tejas-ml.github.io/blog/${slug}/`}
+  rssHref={`https://tejas-ml.github.io/blog/${slug}/rss.xml`}
+  rssTitle={`${section.title} — Tejas Mahajan`}
+>
+  <main>
+    <p class="page-kicker">Section</p>
+    <h1 class="page-title">{section.title}</h1>
+    <p class="page-intro">{section.description}</p>
+    <p class="section-feed">
+      <a href={feedPath}>RSS feed for this section</a>
+    </p>
+    <PostList posts={posts} showSection={false} />
+  </main>
+</Base>

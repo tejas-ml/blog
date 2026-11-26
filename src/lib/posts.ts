@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import type { SectionSlug } from './sections';
 
 export type Post = CollectionEntry<'posts'>;
 
@@ -15,6 +16,11 @@ export async function getPublishedPosts(): Promise<Post[]> {
     return import.meta.env.PROD ? data.draft !== true : true;
   });
   return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+}
+
+export async function getPostsBySection(slug: SectionSlug): Promise<Post[]> {
+  const posts = await getPublishedPosts();
+  return posts.filter((post) => post.data.category === slug);
 }
 
 export function formatDate(date: Date): string {

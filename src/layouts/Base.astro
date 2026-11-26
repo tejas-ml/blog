@@ -2,6 +2,7 @@
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import "../styles/global.css";
+import type { SectionSlug } from "../lib/sections";
 
 interface Props {
   title: string;
@@ -10,7 +11,9 @@ interface Props {
   type?: "website" | "article";
   pubDate?: Date;
   tags?: string[];
-  current?: "home" | "tags" | "about" | "post";
+  current?: "home" | "tags" | "about" | "post" | SectionSlug;
+  rssHref?: string;
+  rssTitle?: string;
 }
 
 const {
@@ -21,6 +24,8 @@ const {
   pubDate,
   tags = [],
   current,
+  rssHref,
+  rssTitle,
 } = Astro.props;
 
 const site = "https://tejas-ml.github.io";
@@ -40,6 +45,7 @@ const fullTitle = title.includes("Tejas Mahajan") ? title : `${title} — Tejas 
     <link rel="canonical" href={canonicalURL} />
     <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
     <link rel="alternate" type="application/rss+xml" title="Tejas Mahajan — Blog" href={new URL("blog/rss.xml", Astro.site).href} />
+    {rssHref && <link rel="alternate" type="application/rss+xml" title={rssTitle ?? title} href={new URL(rssHref, Astro.site).href} />}
 
     <meta property="og:type" content={type} />
     <meta property="og:site_name" content="Tejas Mahajan" />

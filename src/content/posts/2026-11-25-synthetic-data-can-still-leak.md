@@ -2,6 +2,7 @@
 title: "Why synthetic data can still leak private records"
 description: "A walkthrough of SyntheticShield, a research prototype that audits synthetic-data generators for memorization and membership leakage using canary records and membership tests."
 pubDate: 2026-11-25
+category: ai-ml
 tags: ["AI security", "privacy", "synthetic data", "machine learning"]
 ---
 
