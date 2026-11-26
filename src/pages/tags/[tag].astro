@@ -1,0 +1,49 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getPublishedPosts, postPath, formatDate } from "../../lib/posts";
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  const byTag = new Map<string, typeof posts>();
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
+      const key = tag.toLowerCase().replace(/\s+/g, "-");
+      const list = byTag.get(key) ?? [];
+      list.push(post);
+      byTag.set(key, list);
+    }
+  }
+  return [...byTag.entries()].map(([slug, tagged]) => {
+    const label = tagged[0].data.tags.find((t) => t.toLowerCase().replace(/\s+/g, "-") === slug) ?? slug;
+    return { params: { tag: slug }, props: { label, posts: tagged } };
+  });
+}
+
+const { tag } = Astro.params;
+const { label, posts } = Astro.props;
+---
+<Base
+  title={`Posts tagged “${label}”`}
+  description={`Posts by Tejas Mahajan tagged ${label}.`}
+  current="tags"
+  canonical={`https://tejas-ml.github.io/blog/tags/${tag}/`}
+>
+  <main>
+    <p class="page-kicker">Tag</p>
+    <h1 class="page-title">{label}</h1>
+    <p class="page-intro">
+      <a href={`${import.meta.env.BASE_URL}tags/`}>All tags</a>
+    </p>
+    <ul class="post-list">
+      {posts.map((post) => (
+        <li class="post-item">
+          <div class="meta">
+            <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+          </div>
+          <a class="title" href={postPath(post)}>{post.data.title}</a>
+          <p>{post.data.description}</p>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Base>

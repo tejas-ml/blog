@@ -1,0 +1,17 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base
+  title="Page not found"
+  description="The page you requested does not exist on the blog of Tejas Mahajan."
+  current="home"
+>
+  <main>
+    <h1 class="page-title">Page not found</h1>
+    <p class="page-intro">
+      That URL does not match a post or page. Go back to the
+      <a href={import.meta.env.BASE_URL}>blog home</a>
+      or the <a href="https://tejas-ml.github.io/">portfolio</a>.
+    </p>
+  </main>
+</Base>

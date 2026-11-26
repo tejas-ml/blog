@@ -1,0 +1,58 @@
+---
+import { render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { getPublishedPosts, postSlug, formatDate } from "../../lib/posts";
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({
+    params: { slug: postSlug(post) },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const slug = postSlug(post);
+---
+<Base
+  title={post.data.title}
+  description={post.data.description}
+  type="article"
+  pubDate={post.data.pubDate}
+  tags={post.data.tags}
+  current="post"
+  canonical={`https://tejas-ml.github.io/blog/posts/${slug}/`}
+>
+  <main>
+    <article>
+      <header class="post-header">
+        <p class="page-kicker">
+          <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+        </p>
+        <h1>{post.data.title}</h1>
+        <div class="meta">
+          <span>Tejas Mahajan</span>
+          {post.data.tags.length > 0 && <span>{post.data.tags.join(" · ")}</span>}
+        </div>
+      </header>
+      <div class="prose">
+        <Content />
+      </div>
+      <footer class="post-footer">
+        {post.data.tags.length > 0 && (
+          <div class="tags">
+            {post.data.tags.map((tag) => (
+              <a class="tag" href={`${import.meta.env.BASE_URL}tags/${tag.toLowerCase().replace(/\s+/g, "-")}/`}>{tag}</a>
+            ))}
+          </div>
+        )}
+        <p>
+          Written by <a href={`${import.meta.env.BASE_URL}about/`}>Tejas Mahajan</a>.
+          More writing on the <a href={import.meta.env.BASE_URL}>blog</a>,
+          and projects on the <a href="https://tejas-ml.github.io/">portfolio</a>.
+        </p>
+      </footer>
+    </article>
+  </main>
+</Base>

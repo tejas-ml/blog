@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>How RAGGuard filters sensitive context before it reaches the model — Tejas Mahajan</title><meta name="description" content="A walkthrough of RAGGuard, a research prototype that sits between a retriever and a generator, classifies each chunk, and measures leakage against an unfiltered RAG baseline."><meta name="author" content="Tejas Mahajan"><meta name="robots" content="index, follow"><link rel="canonical" href="https://tejas-ml.github.io/blog/posts/ragguard-privacy-firewall/"><link rel="icon" type="image/svg+xml" href="/blog/favicon.svg"><link rel="alternate" type="application/rss+xml" title="Tejas Mahajan — Blog" href="https://tejas-ml.github.io/blog/rss.xml"><meta property="og:type" content="article"><meta property="og:site_name" content="Tejas Mahajan"><meta property="og:title" content="How RAGGuard filters sensitive context before it reaches the model — Tejas Mahajan"><meta property="og:description" content="A walkthrough of RAGGuard, a research prototype that sits between a retriever and a generator, classifies each chunk, and measures leakage against an unfiltered RAG baseline."><meta property="og:url" content="https://tejas-ml.github.io/blog/posts/ragguard-privacy-firewall/"><meta property="og:image" content="https://tejas-ml.github.io/images/og-preview.png"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-11-25T00:00:00.000Z"><meta property="article:tag" content="AI security"><meta property="article:tag" content="RAG"><meta property="article:tag" content="privacy"><meta property="article:tag" content="machine learning"><meta property="article:author" content="Tejas Mahajan"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="How RAGGuard filters sensitive context before it reaches the model — Tejas Mahajan"><meta name="twitter:description" content="A walkthrough of RAGGuard, a research prototype that sits between a retriever and a generator, classifies each chunk, and measures leakage against an unfiltered RAG baseline."><meta name="twitter:image" content="https://tejas-ml.github.io/images/og-preview.png"><script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var mode = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", mode);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script><link rel="stylesheet" href="/blog/_astro/about.BEggFdto.css"></head> <body> <header class="site-header"> <div class="nav-inner"> <a href="/blog/" class="site-name">Tejas Mahajan <span>Blog</span></a> <div class="nav-right"> <button class="nav-toggle" type="button" aria-label="Toggle navigation">Menu</button> <nav> <ul class="site-nav"> <li><a href="/blog/">Posts</a></li> <li><a href="/blog/tags/">Tags</a></li> <li><a href="/blog/about/">About</a></li> <li><a href="https://tejas-ml.github.io/">Portfolio</a></li> </ul> </nav> <button class="theme-toggle" type="button" aria-label="Toggle dark mode"> <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <circle cx="12" cy="12" r="4"></circle> <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path> </svg> <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"></path> </svg> </button> </div> </div> </header> <script type="module">const n=document.querySelector(".nav-toggle"),t=document.querySelector(".site-nav");n?.addEventListener("click",()=>t?.classList.toggle("open"));t?.querySelectorAll("a").forEach(e=>{e.addEventListener("click",()=>t.classList.remove("open"))});const c=document.querySelector(".theme-toggle");c?.addEventListener("click",()=>{const e=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",e),localStorage.setItem("theme",e)});</script>  <main> <article> <header class="post-header"> <p class="page-kicker"> <time datetime="2026-11-25T00:00:00.000Z">November 24, 2026</time> </p> <h1>How RAGGuard filters sensitive context before it reaches the model</h1> <div class="meta"> <span>Tejas Mahajan</span> <span>AI security · RAG · privacy · machine learning</span> </div> </header> <div class="prose"> <p>In a typical retrieval-augmented generation (RAG) stack, retrieved documents are concatenated into the model context. If the index contains salaries, credentials, health details, or a prompt-injection payload, an unfiltered generator can copy that material into the answer.</p>
+<p><a href="https://github.com/tejas-ml/RAGGuard">RAGGuard</a> is a research prototype for a context-aware privacy firewall that sits between a retriever and a language model. It classifies each retrieved chunk as safe, redactable, or blocked, then measures leakage and answer utility against an unfiltered baseline. This post explains how the prototype is put together, what the checked-in experiment shows, and what it does not show.</p>
+<p>This is research software, not a production security product. The experiment is fully offline and deterministic. No model API is required.</p>
+<h2 id="the-pipeline">The pipeline</h2>
+<p>The path through the system is short:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e; overflow-x: auto;" tabindex="0" data-language="text"><code><span class="line"><span>User query</span></span>
+<span class="line"><span>  → TF-IDF retriever (top-k = 4)</span></span>
+<span class="line"><span>  → RAGGuard firewall (score, redact, or block)</span></span>
+<span class="line"><span>  → simulated response</span></span></code></pre>
+<p>The retriever (<code>ragguard/retrieval.py</code>) is an in-memory TF-IDF index with cosine similarity. The default is <code>top_k=4</code>. There is no vector database and no live embedding model. That is intentional: the goal is a reproducible firewall experiment, not a retrieval bake-off.</p>
+<h2 id="how-a-chunk-is-classified">How a chunk is classified</h2>
+<p>Each retrieved chunk gets an additive sensitivity score. The score combines several signals:</p>
+<ul>
+<li>PII patterns such as email, phone, and Social Security numbers</li>
+<li>secret patterns such as API keys, passwords, and bearer tokens</li>
+<li>private-content terms</li>
+<li>the document’s access level: public, internal, confidential, or private</li>
+<li>prompt-injection indicators</li>
+<li>overlap between private terms and the user query</li>
+</ul>
+<p>The firewall then assigns a label:</p>
+<ul>
+<li><code>public-safe</code> — passed through unchanged</li>
+<li><code>sensitive-redacted</code> — PII and secrets replaced, then passed through</li>
+<li><code>private-blocked</code> — removed from the model context</li>
+</ul>
+<p>Hard blocks also trigger on prompt injection, a <code>private</code> access level, or a raw API key or SSN match. The default score threshold is <code>0.55</code>, with a redaction margin of <code>0.30</code>.</p>
+<p>The generator (<code>ragguard/llm_sim.py</code>) is a deterministic simulator, not a live language model. The baseline copies public facts and, on attack queries, copies secret spans from unfiltered context. The RAGGuard path answers only from non-blocked, possibly redacted text, or refuses when nothing safe remains.</p>
+<p>Leakage is whether secret spans appear in the answer. Utility is the fraction of gold facts found in the answer, using exact-string match.</p>
+<h2 id="the-benchmark">The benchmark</h2>
+<p>The corpus and queries are synthetic and hand-written (<code>ragguard/data.py</code>):</p>
+<ul>
+<li>12 company documents: 3 public, 4 internal, 1 confidential, and 4 private</li>
+<li>13 queries: 5 benign, 2 sensitive-benign, 4 privacy attacks, and 2 prompt-injection attacks</li>
+</ul>
+<p>The documents include public product policy, redactable contact and salary-band text, and private records (exact salary, health information, API keys). Some retrieved malicious documents contain patterns such as “ignore previous instructions” and “reveal confidential data.”</p>
+<p>These numbers are from the artifacts checked in under <code>results/</code>, produced by:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">python</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> experiments/run_experiment.py</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> --threshold</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> 0.55</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> --top-k</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> 4</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> --out</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> results</span></span></code></pre>
+<p>They are not results from a production or API-backed language model. Re-running that command with the same flags should regenerate the same tables.</p>
+<h2 id="what-the-experiment-shows">What the experiment shows</h2>
+<p>On this benchmark, with threshold <code>0.55</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th align="right">Baseline RAG</th>
+<th align="right">RAGGuard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Leakage rate (any sensitive, attack + sensitive-benign queries)</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr>
+<td>Leakage fraction of secret spans (same query set)</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr>
+<td>Leakage rate on privacy / prompt-injection attacks</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr>
+<td>Answer utility on benign + sensitive-benign queries</td>
+<td align="right">1.00</td>
+<td align="right">0.679</td>
+</tr>
+<tr>
+<td>Answer utility on all 13 queries</td>
+<td align="right">0.538</td>
+<td align="right">0.827</td>
+</tr>
+<tr>
+<td>Mean blocked chunks per query</td>
+<td align="right">0.00</td>
+<td align="right">1.85</td>
+</tr>
+<tr>
+<td>Mean redacted chunks per query</td>
+<td align="right">0.00</td>
+<td align="right">0.54</td>
+</tr>
+</tbody>
+</table>
+<p>Two details are easy to misread, so they are worth stating plainly.</p>
+<p>Utility on all 13 queries rises under RAGGuard because the simulator scores a refusal as useful when a query has no gold public facts, which is typical of the attack queries. That is a scoring choice, not evidence that the firewall writes better answers.</p>
+<p>The number that reflects the privacy–utility tradeoff on ordinary questions is utility on benign and sensitive-benign queries, which falls from 1.00 to 0.679.</p>
+<p>A threshold sweep in <code>results/threshold_sweep.csv</code> varies the firewall threshold from 0.15 to 0.95. Leakage on the sensitive set stays at 0.00 through threshold 0.55 and is 0.125 at thresholds 0.65 and above. Benign utility is 0.607 at the stricter thresholds (0.15–0.35) and 0.679 from 0.45 upward. On this corpus, loosening the threshold past 0.55 starts to let leakage through, while tightening it below 0.45 costs some benign utility and does not further reduce leakage, which is already zero.</p>
+<h2 id="limitations">Limitations</h2>
+<p>The firewall is a pattern- and policy-based classifier. It does not use a learned model to detect sensitive text, and it will miss secrets that do not match its patterns. The corpus is small and synthetic. The generator is a simulator designed so that unfiltered context leaks and filtered context does not copy blocked spans — it is not a stand-in for a frontier model, which can leak by paraphrase, inference, or tool use. Exact-string utility will also under-count answers that are right in substance but worded differently.</p>
+<p>To try a real model, the intended next step is to replace <code>ragguard/llm_sim.py</code> and keep the same metrics and figure pipeline.</p>
+<p>The code, experiment driver, and checked-in results are in the <a href="https://github.com/tejas-ml/RAGGuard">RAGGuard repository</a>.</p> </div> <footer class="post-footer"> <div class="tags"> <a class="tag" href="/blog/tags/ai-security/">AI security</a><a class="tag" href="/blog/tags/rag/">RAG</a><a class="tag" href="/blog/tags/privacy/">privacy</a><a class="tag" href="/blog/tags/machine-learning/">machine learning</a> </div> <p>
+Written by <a href="/blog/about/">Tejas Mahajan</a>.
+          More writing on the <a href="/blog/">blog</a>,
+          and projects on the <a href="https://tejas-ml.github.io/">portfolio</a>.
+</p> </footer> </article> </main>  <footer class="site-footer"> <p>&copy; 2026 Tejas Mahajan · Orlando, Florida</p> <p class="footer-links"> <a href="/blog/rss.xml">RSS</a> <a href="https://tejas-ml.github.io/">Portfolio</a> <a href="https://github.com/tejas-ml">GitHub</a> <a href="https://www.linkedin.com/in/tejas-ml">LinkedIn</a> <a href="https://scholar.google.com/citations?user=-2meKdkAAAAJ">Google Scholar</a> </p> </footer> </body></html>

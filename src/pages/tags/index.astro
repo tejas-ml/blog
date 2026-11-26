@@ -1,0 +1,36 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getPublishedPosts } from "../../lib/posts";
+
+const posts = await getPublishedPosts();
+const counts = new Map<string, number>();
+for (const post of posts) {
+  for (const tag of post.data.tags) {
+    counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+}
+const tags = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+function slugify(tag: string) {
+  return tag.toLowerCase().replace(/\s+/g, "-");
+}
+---
+<Base
+  title="Tags"
+  description="Topics on the blog of Tejas Mahajan."
+  current="tags"
+  canonical="https://tejas-ml.github.io/blog/tags/"
+>
+  <main>
+    <p class="page-kicker">Index</p>
+    <h1 class="page-title">Tags</h1>
+    <p class="page-intro">Browse posts by topic.</p>
+    <div class="tags">
+      {tags.map(([tag, count]) => (
+        <a class="tag" href={`${import.meta.env.BASE_URL}tags/${slugify(tag)}/`}>
+          {tag} · {count}
+        </a>
+      ))}
+    </div>
+  </main>
+</Base>

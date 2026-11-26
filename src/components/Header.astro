@@ -1,0 +1,47 @@
+---
+interface Props {
+  current?: "home" | "tags" | "about" | "post";
+}
+const { current } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<header class="site-header">
+  <div class="nav-inner">
+    <a href={base} class="site-name">Tejas Mahajan <span>Blog</span></a>
+    <div class="nav-right">
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation">Menu</button>
+      <nav>
+        <ul class="site-nav">
+          <li><a href={base} class={current === "home" ? "active" : undefined}>Posts</a></li>
+          <li><a href={`${base}tags/`} class={current === "tags" ? "active" : undefined}>Tags</a></li>
+          <li><a href={`${base}about/`} class={current === "about" ? "active" : undefined}>About</a></li>
+          <li><a href="https://tejas-ml.github.io/">Portfolio</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+<script>
+  const toggle = document.querySelector(".nav-toggle");
+  const nav = document.querySelector(".site-nav");
+  toggle?.addEventListener("click", () => nav?.classList.toggle("open"));
+  nav?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => nav.classList.remove("open"));
+  });
+
+  const themeBtn = document.querySelector(".theme-toggle");
+  themeBtn?.addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  });
+</script>
