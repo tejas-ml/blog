@@ -18,10 +18,12 @@ export async function getPublishedPosts(): Promise<Post[]> {
 }
 
 export function formatDate(date: Date): string {
+  // Frontmatter dates are calendar dates (midnight UTC). Format in UTC so
+  // they do not roll back a day in US time zones.
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'America/New_York',
+    timeZone: 'UTC',
   });
 }
